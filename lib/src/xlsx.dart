@@ -520,7 +520,7 @@ class XlsxDecoder extends SpreadsheetDecoder {
     ];
     var children = value == null ? <XmlElement>[] : <XmlElement>[
       new XmlElement(new XmlName('is'), [], [
-        new XmlElement(new XmlName('t'), [], [new XmlText(_escape(value.toString()))])
+        new XmlElement(new XmlName('t'), [], [new XmlText(value.toString())])
       ]),
     ];
     return new XmlElement(new XmlName('c'), attributes, children);

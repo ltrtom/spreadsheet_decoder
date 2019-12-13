@@ -142,7 +142,7 @@ abstract class SpreadsheetDecoder {
   }
 
   /// Update the contents from [sheet] of the cell [columnIndex]x[rowIndex] with indexes start from 0
-  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value) {
+  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
     _checkSheetArguments(sheet);
     if (columnIndex < 0 || columnIndex >= _tables[sheet]._maxCols) {
       throw RangeError.range(columnIndex, 0, _tables[sheet]._maxCols - 1);

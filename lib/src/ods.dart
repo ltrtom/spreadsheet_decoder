@@ -78,7 +78,7 @@ class OdsDecoder extends SpreadsheetDecoder {
     parent.children.remove(row);
   }
 
-  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value) {
+  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
     super.updateCell(sheet, columnIndex, rowIndex, value);
 
     var row = _findRowByIndex(_sheets[sheet], rowIndex);

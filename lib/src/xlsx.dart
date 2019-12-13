@@ -203,11 +203,11 @@ class XlsxDecoder extends SpreadsheetDecoder {
     parent.children.remove(foundRow);
   }
 
-  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value) {
-    super.updateCell(sheet, columnIndex, rowIndex, value);
+  void updateCell(String sheet, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
+    super.updateCell(sheet, columnIndex, rowIndex, value, styleIndex: styleIndex);
 
     var foundRow = _findRowByIndex(_sheets[sheet], rowIndex);
-    _updateCell(foundRow, columnIndex, rowIndex, value);
+    _updateCell(foundRow, columnIndex, rowIndex, value, styleIndex: styleIndex);
   }
 
   _parseRelations() {
@@ -454,7 +454,7 @@ class XlsxDecoder extends SpreadsheetDecoder {
     return row;
   }
 
-  static XmlElement _updateCell(XmlElement node, int columnIndex, int rowIndex, dynamic value) {
+  static XmlElement _updateCell(XmlElement node, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
     XmlElement cell;
     var cells = _findCells(node);
 
@@ -468,9 +468,9 @@ class XlsxDecoder extends SpreadsheetDecoder {
     }
 
     if (cell == null || currentIndex != columnIndex) {
-      cell = _insertCell(node, cell, columnIndex, rowIndex, value);
+      cell = _insertCell(node, cell, columnIndex, rowIndex, value, styleIndex: styleIndex);
     } else {
-      cell = _replaceCell(node, cell, columnIndex, rowIndex, value);
+      cell = _replaceCell(node, cell, columnIndex, rowIndex, value, styleIndex: styleIndex);
     }
 
     return cell;
@@ -494,8 +494,8 @@ class XlsxDecoder extends SpreadsheetDecoder {
     return row;
   }
 
-  static XmlElement _insertCell(XmlElement row, XmlElement lastCell, int columnIndex, int rowIndex, dynamic value) {
-    var cell = _createCell(columnIndex, rowIndex, value);
+  static XmlElement _insertCell(XmlElement row, XmlElement lastCell, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
+    var cell = _createCell(columnIndex, rowIndex, value, styleIndex: styleIndex);
     if (lastCell == null) {
       row.children.add(cell);
     } else {
@@ -505,9 +505,9 @@ class XlsxDecoder extends SpreadsheetDecoder {
     return cell;
   }
 
-  static XmlElement _replaceCell(XmlElement row, XmlElement lastCell, int columnIndex, int rowIndex, dynamic value) {
+  static XmlElement _replaceCell(XmlElement row, XmlElement lastCell, int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
     var index = lastCell == null ? 0 : row.children.indexOf(lastCell);
-    var cell = _createCell(columnIndex, rowIndex, value);
+    var cell = _createCell(columnIndex, rowIndex, value, styleIndex: styleIndex);
     row.children
       ..removeAt(index)
       ..insert(index, cell);
@@ -515,18 +515,74 @@ class XlsxDecoder extends SpreadsheetDecoder {
   }
 
   // TODO Manage value's type
-  static XmlElement _createCell(int columnIndex, int rowIndex, dynamic value) {
+  static XmlElement _createCell(int columnIndex, int rowIndex, dynamic value, {int styleIndex}) {
+    if (value is num) {
+      return _createNumberCell(columnIndex, rowIndex, value, styleIndex: styleIndex);
+    }
+
+    if (value is DateTime) {
+      return _createDateCell(columnIndex, rowIndex, value, styleIndex: styleIndex);
+    }
+
     var attributes = <XmlAttribute>[
-      XmlAttribute(XmlName('r'), '${numericToLetters(columnIndex + 1)}${rowIndex + 1}'),
+      XmlAttribute(
+          XmlName('r'), '${numericToLetters(columnIndex + 1)}${rowIndex + 1}'),
       XmlAttribute(XmlName('t'), 'inlineStr'),
     ];
+
+    if (styleIndex != null) {
+      attributes.add(XmlAttribute(new XmlName('s'), '$styleIndex'));
+    }
+
     var children = value == null
         ? <XmlElement>[]
         : <XmlElement>[
-            XmlElement(XmlName('is'), [], [
-              XmlElement(XmlName('t'), [], [XmlText(value.toString())])
-            ]),
-          ];
+      XmlElement(XmlName('is'), [], [
+        XmlElement(XmlName('t'), [], [XmlText(value.toString())])
+      ]),
+    ];
     return XmlElement(XmlName('c'), attributes, children);
+  }
+
+  static XmlElement _createNumberCell(
+      int columnIndex, int rowIndex, num value, {int styleIndex}) {
+    var attributes = <XmlAttribute>[
+      new XmlAttribute(new XmlName('r'),
+          '${numericToLetters(columnIndex + 1)}${rowIndex + 1}'),
+      XmlAttribute(new XmlName('t'), 'n'),
+    ];
+
+
+    if (styleIndex != null) {
+      attributes.add(XmlAttribute(new XmlName('s'), '$styleIndex'));
+    }
+
+    var children = value == null
+        ? <XmlElement>[]
+        : <XmlElement>[
+      new XmlElement(
+          new XmlName('v'), [], [new XmlText(value.toString())]),
+    ];
+    return new XmlElement(new XmlName('c'), attributes, children);
+  }
+
+  static XmlElement _createDateCell(int columnIndex, int rowIndex, DateTime value, {int styleIndex}) {
+    var attributes = <XmlAttribute>[
+      new XmlAttribute(new XmlName('r'),
+          '${numericToLetters(columnIndex + 1)}${rowIndex + 1}'),
+      new XmlAttribute(new XmlName('t'), 'd'),
+    ];
+
+    if (styleIndex != null) {
+      attributes.add(XmlAttribute(new XmlName('s'), '$styleIndex'));
+    }
+
+    var children = value == null
+        ? <XmlElement>[]
+        : <XmlElement>[
+      new XmlElement(
+          new XmlName('v'), [], [new XmlText(value.toIso8601String())]),
+    ];
+    return new XmlElement(new XmlName('c'), attributes, children);
   }
 }
